@@ -11,10 +11,11 @@
 //     eth: 0,
 //     doge: 0,
 // }]
+
 let wallet = 0;
 let btc = 0;
 
-document.getElementById("wallet").innerHTML = `<p>ARS$${wallet} y BTC${btc}</p>`
+document.getElementById("wallet").innerHTML = `<p>ARS$` + JSON.parse(wallet) + `y BTC${btc}</p>`
 
 const cryptoTrade = () =>{ //la idea a futuro es meter API para sacar el valor diario del BTC para poder hacer la conversion
 
@@ -31,6 +32,8 @@ const cryptoTrade = () =>{ //la idea a futuro es meter API para sacar el valor d
     else{
         document.getElementById('validate').innerHTML = 'X No pipi, no tenes platita para hacer esto';
     }
+    let arsLoad = localStorage.setItem('billetera', wallet);
+    let btcLoad = localStorage.setItem('cripto', btc);
     return;
 }
 const moneyIn = document.getElementById('amountInBtn') 
@@ -43,6 +46,8 @@ moneyIn.onclick = () => { //funcion que ingresa dinero, como es infinito, sin pr
     else if(document.getElementById('amountIn').value = isNaN(amount)){
         document.getElementById('validate').innerHTML = `X No has ingresado un monto en particular, por favor reintenta.`;
     }
+    let arsLoad = localStorage.setItem('billetera', wallet);
+    let btcLoad = localStorage.setItem('cripto', btc);
     return;
 }
 
@@ -59,9 +64,13 @@ const moneyOut = () =>{ //funcion que saca dinero de input para actualizar walle
         else{
             document.getElementById('validate').innerHTML = 'X no locura, vos queres endeudarte, no te lo voy a permitir!';
         }
+        let arsLoad = localStorage.setItem('billetera', wallet);
+        let btcLoad = localStorage.setItem('cripto', btc);
     return;
 }
 
 //Local Storage, Saving All Transactions.
+let arsSave = JSON.stringify(wallet);
+let btcSave = JSON.stringify(btc);
 let arsLoad = localStorage.setItem('billetera', wallet);
 let btcLoad = localStorage.setItem('cripto', btc);
