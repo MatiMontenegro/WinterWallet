@@ -14,8 +14,9 @@
 
 let wallet = 0;
 let btc = 0;
-
-document.getElementById("wallet").innerHTML = `<p>ARS$` + JSON.parse(wallet) + `y BTC${btc}</p>`
+const newWallet=localStorage.getItem('billetera');
+const newCoin=localStorage.getItem('cripto');
+document.getElementById("wallet").innerHTML = `<p>ARS$` + JSON.parse(newWallet) + `y BTC$` + JSON.parse(newCoin) + `</p>`
 
 const cryptoTrade = () =>{ //la idea a futuro es meter API para sacar el valor diario del BTC para poder hacer la conversion
 
