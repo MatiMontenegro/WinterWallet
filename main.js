@@ -12,11 +12,12 @@
 //     doge: 0,
 // }]
 
-let wallet = 0;
-let btc = 0;
-const newWallet=localStorage.getItem('billetera');
-const newCoin=localStorage.getItem('cripto');
-document.getElementById("wallet").innerHTML = `<p>ARS$` + JSON.parse(newWallet) + `y BTC$` + JSON.parse(newCoin) + `</p>`
+
+    //Cargamos la documentacion guardada en la billetera abajo de todo y solamente falta parsearla.
+    let wallet = JSON.parse(localStorage.getItem('billetera'));
+    let btc = JSON.parse(localStorage.getItem('cripto'));
+
+document.getElementById("wallet").innerHTML = `<p>ARS$ ${wallet}  y BTC$ ${btc}  </p>`
 
 const cryptoTrade = () =>{ //la idea a futuro es meter API para sacar el valor diario del BTC para poder hacer la conversion
 
@@ -24,7 +25,12 @@ const cryptoTrade = () =>{ //la idea a futuro es meter API para sacar el valor d
     if(wallet >= 0 && amount <= wallet){
         wallet -= amount;
         btc += amount/3802620.70;
-        alert(`Perfecto, compraste ${btc} en BTC`);
+        Swal.fire(
+            'Perfecto',
+            `Perfecto, compraste ${btc} en BTC`,
+            'success'
+          )
+    //    alert(`Perfecto, compraste ${btc} en BTC`);
         document.getElementById("wallet").innerHTML = `<p>ARS$${wallet} y BTC${btc}</p>`;
     }
     else if(document.getElementById('amountIn').value = isNaN(amount)){
@@ -41,7 +47,11 @@ const moneyIn = document.getElementById('amountInBtn')
 moneyIn.onclick = () => { //funcion que ingresa dinero, como es infinito, sin problemas (por ahora, la idea es meter un href a mercadopago.)
     if(amount = parseInt( document.getElementById('amountIn').value)){
         wallet += amount;
-        alert(`Felicitaciones, ingresaste ARS$${amount} cantidad de dinero`);
+        Swal.fire(
+            'Perfecto',
+            `Felicitaciones, ingresaste ARS$${amount} cantidad de dinero`,
+            'success'
+          )
         document.getElementById("wallet").innerHTML = `<p>ARS$${wallet} y BTC${btc}</p>`;
     }
     else if(document.getElementById('amountIn').value = isNaN(amount)){
@@ -56,22 +66,25 @@ const moneyOut = () =>{ //funcion que saca dinero de input para actualizar walle
     amount = parseInt(document.getElementById('amountOut').value);
     if(wallet >= 0 && amount <= wallet){
         wallet -= amount;
-        alert(`Felicitaciones, descontaste ARS$${amount} cantidad de dinero`);
+        Swal.fire(
+            'Perfecto',
+            `Felicitaciones, descontaste ARS$${amount} cantidad de dinero`,
+            'success'
+          )
         document.getElementById("wallet").innerHTML = `<p>ARS$${wallet} y BTC${btc}</p>`;
-        }
-        else if(document.getElementById('amountIn').value = isNaN(amount)){
-            document.getElementById('validate').innerHTML = `X No has ingresado un monto en particular, por favor reintenta.`;
-        }
-        else{
-            document.getElementById('validate').innerHTML = 'X no locura, vos queres endeudarte, no te lo voy a permitir!';
-        }
-        let arsLoad = localStorage.setItem('billetera', wallet);
-        let btcLoad = localStorage.setItem('cripto', btc);
+        
+    }
+    
+    else if(document.getElementById('amountIn').value = isNaN(amount)){
+        document.getElementById('validate').innerHTML = `X No has ingresado un monto en particular, por favor reintenta.`;
+    }
+    else{
+        document.getElementById('validate').innerHTML = 'X no locura, vos queres endeudarte, no te lo voy a permitir!';
+    }
+    let arsLoad = localStorage.setItem('billetera', wallet);
+    let btcLoad = localStorage.setItem('cripto', btc);
     return;
 }
-
 //Local Storage, Saving All Transactions.
-let arsSave = JSON.stringify(wallet);
-let btcSave = JSON.stringify(btc);
-let arsLoad = localStorage.setItem('billetera', wallet);
-let btcLoad = localStorage.setItem('cripto', btc);
+let arsLoad = localStorage.setItem('billetera', JSON.parse(wallet));
+let btcLoad = localStorage.setItem('cripto', JSON.parse(btc));
