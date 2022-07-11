@@ -56,3 +56,34 @@ color:$lime-grey
 .bgyellow{
 background-color: $lime-yellow;	
 }
+
+//Sidebar Menu CSS
+.side-navbar {
+	width: 180px;
+	height: 100%;
+	position: fixed;
+	margin-left: -500px;
+	background-color: rgba(45,51,63, 0.8);
+	transition: 0.5s;
+  }
+  .nav-link:active,
+  .nav-link:focus,
+  .nav-link:hover {
+	background-color: $lime-grey;
+  }
+  .my-container {
+	transition: 0.4s;
+  }
+  .active-nav {
+	margin-left: 0;
+  }
+  /* for main section */
+  .active-cont {
+	margin-left: 180px;
+  }
+  #menu-btn {
+	background-color: $lime-grey;
+	color: $lime-lime;
+	margin-left: 0px;
+  }
+  //end Sidebar
