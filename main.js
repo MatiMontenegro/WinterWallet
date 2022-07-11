@@ -13,8 +13,15 @@
 // }]
     //Cargamos la documentacion guardada en la billetera abajo de todo y solamente falta parsearla.
 
+    
+    
     let wallet = JSON.parse(localStorage.getItem('billetera'));
     let btc = JSON.parse(localStorage.getItem('cripto'));
+    
+    if(wallet === null && btc === null){
+        wallet=0;
+        btc=0;
+    }
   
 document.getElementById("wallet").innerHTML = `<p>ARS$ ${wallet}  y BTC$ ${btc}  </p>`
 document.getElementById("wallet-sidebar").innerHTML = `<p>ARS$ ${wallet}  y BTC$ ${btc}  </p>`
