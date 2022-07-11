@@ -35,10 +35,10 @@ const cryptoTrade = () =>{ //la idea a futuro es meter API para sacar el valor d
         document.getElementById("wallet").innerHTML = `<p>ARS$${wallet} y BTC${btc}</p>`;
     }
     else if(document.getElementById('amountIn').value = isNaN(amount)){
-        document.getElementById('validate').innerHTML = `<p class = "p-5 text-center border border-danger rounded">X No has ingresado un monto en particular, por favor reintenta.</p>`;
+        document.getElementById('validate').innerHTML = `<p class = " p-2 text-center border border-danger rounded">X No has ingresado un monto en particular, por favor reintenta.</p>`;
     }
     else{
-        document.getElementById('validate').innerHTML = `<p class = "p-5 text-center border border-danger rounded">X No contas con dinero para hacer la transaccion</p>`;
+        document.getElementById('validate').innerHTML = `<p class = " p-2 text-center border border-danger rounded">X No contas con dinero para hacer la transaccion</p>`;
     }
     let arsLoad = localStorage.setItem('billetera', wallet);
     let btcLoad = localStorage.setItem('cripto', btc);
@@ -56,14 +56,14 @@ moneyIn.onclick = () => { //funcion que ingresa dinero, como es infinito, sin pr
         document.getElementById("wallet").innerHTML = `<p>ARS$${wallet} y BTC${btc}</p>`;
     }
     else if(document.getElementById('amountIn').value = isNaN(amount)){
-        document.getElementById('validate').innerHTML = `<p class = "p-5 text-center border border-danger rounded">X No has ingresado un monto en particular, por favor reintenta.</p>`;
+        document.getElementById('validate').innerHTML = `<p class = " p-2 text-center border border-danger rounded">X No has ingresado un monto en particular, por favor reintenta.</p>`;
     }
     let arsLoad = localStorage.setItem('billetera', wallet);
     let btcLoad = localStorage.setItem('cripto', btc);
     return;
 }
-
-const moneyOut = () =>{ //funcion que saca dinero de input para actualizar wallet.
+const moneyOut = document.getElementById('amountOutBtn')
+moneyOut.onclick = () =>{ //funcion que saca dinero de input para actualizar wallet.
     amount = parseInt(document.getElementById('amountOut').value);
     if(wallet >= 0 && amount <= wallet){
         wallet -= amount;
@@ -77,10 +77,10 @@ const moneyOut = () =>{ //funcion que saca dinero de input para actualizar walle
     }
     
     else if(document.getElementById('amountIn').value = isNaN(amount)){
-        document.getElementById('validate').innerHTML = `<p class = "p-5 text-center border border-danger rounded">X No has ingresado un monto en particular, por favor reintenta.</p>`;
+        document.getElementById('validate').innerHTML = `<p class = " p-2 text-center border border-danger rounded">X No has ingresado un monto en particular, por favor reintenta.</p>`;
     }
     else{
-        document.getElementById('validate').innerHTML = `<p class = "p-5 text-center border border-danger rounded">X No es posible realizar la transaccion</p>`;
+        document.getElementById('validate').innerHTML = `<p class = " p-2 text-center border border-danger rounded">X No es posible realizar la transaccion</p>`;
     }
     let arsLoad = localStorage.setItem('billetera', wallet);
     let btcLoad = localStorage.setItem('cripto', btc);
