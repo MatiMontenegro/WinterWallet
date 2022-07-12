@@ -11,10 +11,15 @@
 //     eth: 0,
 //     doge: 0,
 // }]
+    //Users:
+    const user = {
+        name : 'Matias',
+        age: 18,
+        isRegistered: true,
+    }
+    user.isRegistered ? document.getElementById('user').innerHTML = `Bienvenido ${user.name}` : document.getElementById('user').innerHTML =`Bienvenido Guest`;
+    
     //Cargamos la documentacion guardada en la billetera abajo de todo y solamente falta parsearla.
-
-    
-    
     let wallet = JSON.parse(localStorage.getItem('billetera'));
     let btc = JSON.parse(localStorage.getItem('cripto'));
     
@@ -22,7 +27,7 @@
         wallet=0;
         btc=0;
     }
-  
+
 document.getElementById("wallet").innerHTML = `<p>ARS$ ${wallet}  y BTC$ ${btc}  </p>`
 document.getElementById("wallet-sidebar").innerHTML = `<p>ARS$ ${wallet}  y BTC$ ${btc}  </p>`
 
@@ -36,7 +41,7 @@ const cryptoTrade = () =>{ //la idea a futuro es meter API para sacar el valor d
             'Transaccion Completa',
             `Perfecto, compraste ${btc} en BTC`,
             'success'
-          )
+        )
     //    alert(`Perfecto, compraste ${btc} en BTC`);
         document.getElementById("wallet").innerHTML = `<p>ARS$${wallet} y BTC${btc}</p>`;
         document.getElementById("wallet-sidebar").innerHTML = `<p>ARS$ ${wallet}  y BTC$ ${btc}  </p>`
@@ -59,7 +64,7 @@ moneyIn.onclick = () => { //funcion que ingresa dinero, como es infinito, sin pr
             'Transaccion Completa',
             `Felicitaciones, ingresaste ARS$${amount} cantidad de dinero`,
             'success'
-          )
+        )
         document.getElementById("wallet").innerHTML = `<p>ARS$${wallet} y BTC${btc}</p>`;
         document.getElementById("wallet-sidebar").innerHTML = `<p>ARS$ ${wallet}  y BTC$ ${btc}  </p>`
     }
@@ -79,7 +84,7 @@ moneyOut.onclick = () =>{ //funcion que saca dinero de input para actualizar wal
             'Transaccion Completa',
             `Felicitaciones, descontaste ARS$${amount} cantidad de dinero`,
             'success'
-          )
+        )
         document.getElementById("wallet").innerHTML = `<p>ARS$${wallet} y BTC${btc}</p>`;
         document.getElementById("wallet-sidebar").innerHTML = `<p>ARS$ ${wallet}  y BTC$ ${btc}  </p>`
     }
@@ -103,6 +108,6 @@ var menu_btn = document.querySelector("#menu-btn");
 var sidebar = document.querySelector("#sidebar");
 var container = document.querySelector(".my-container");
 menu_btn.addEventListener("click", () => {
-  sidebar.classList.toggle("active-nav");
-  container.classList.toggle("active-cont");
+sidebar.classList.toggle("active-nav");
+container.classList.toggle("active-cont");
 });
