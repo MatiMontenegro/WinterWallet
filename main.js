@@ -11,7 +11,23 @@
 //     eth: 0,
 //     doge: 0,
 // }]
-    //Users:
+//Consumo de APIS
+const API_URL = 'https://api.coingecko.com/api/v3/exchange_rates'
+const getCurrencies = () =>{
+    fetch(API_URL)
+    .then ((response) => response.json())
+    .then ((data) => {
+            console.log(data);
+            document.getElementById('values').innerHTML = `<p>Valor Base del ${data.rates.btc.name} <br> ${data.rates.ars.name}  =  ${data.rates.ars.value}</p>`;
+            arsValue = data.rates.ars.value;
+        })
+    .catch(() =>{
+        document.getElementById('currenciesStatus').innerHTML = (`Valores no encontrados, intente luego.`);
+    })
+}
+getCurrencies();
+
+//Users:
     const user = {
         name : 'Matias',
         age: 18,
@@ -36,7 +52,7 @@ const cryptoTrade = () =>{ //la idea a futuro es meter API para sacar el valor d
     amount = parseInt( document.getElementById('exchange').value);
     if(wallet >= 0 && amount <= wallet){
         wallet -= amount;
-        btc += amount/3802620.70;
+        btc += amount/arsValue;
         Swal.fire(
             'Transaccion Completa',
             `Perfecto, compraste ${btc} en BTC`,
@@ -86,7 +102,7 @@ moneyOut.onclick = () =>{ //funcion que saca dinero de input para actualizar wal
             'success'
         )
         document.getElementById("wallet").innerHTML = `<p>ARS$${wallet} y BTC${btc}</p>`;
-        document.getElementById("wallet-sidebar").innerHTML = `<p>ARS$ ${wallet}  y BTC$ ${btc}  </p>`
+        document.getElementById("wallet-sidebar").innerHTML = `<p>ARS$ ${wallet}  y BTC$ ${btc}  </p>`;
     }
     
     else if(document.getElementById('amountIn').value = isNaN(amount)){
