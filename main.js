@@ -1,31 +1,25 @@
 /*******************************************Cripto Wallet Init****************************/
-//Local Storage: Loading Money Last Changes.
-// localStorage.getItem('billetera');
-// localStorage.getItem('criptomoneda');
-//Vars & Objects
 
-// let wallet = [{
-//     ars: 0,
-//     btc: 0,
-//     ada: 0,          //////////TODO: Hacer funcionar el mismo codigo pero que en vez de que wallet represente solo ars, y btc bitcoin, manejar todo unificado.
-//     eth: 0,
-//     doge: 0,
-// }]
-//Consumo de APIS
+//API
 const API_URL = 'https://api.coingecko.com/api/v3/exchange_rates'
 const getCurrencies = () =>{
     fetch(API_URL)
     .then ((response) => response.json())
     .then ((data) => {
-            console.log(data);
-            document.getElementById('values').innerHTML = `<p>Valor Base del ${data.rates.btc.name} <br> ${data.rates.ars.name}  =  ${data.rates.ars.value}</p>`;
-            arsValue = data.rates.ars.value;
-        })
+        console.log(data);
+        document.getElementById('values').innerHTML = `<p>Valor Base del ${data.rates.btc.name} <br> ${data.rates.ars.name}  =  ${data.rates.ars.value}</p>`;
+        arsValue = data.rates.ars.value;
+    })
     .catch(() =>{
         document.getElementById('currenciesStatus').innerHTML = (`Valores no encontrados, intente luego.`);
     })
 }
+//First time API CALL
 getCurrencies();
+//Constant Refresh on API call
+setInterval(() => {
+    getCurrencies();
+},120000)
 
 //Users:
     const user = {
@@ -35,19 +29,22 @@ getCurrencies();
     }
     user.isRegistered ? document.getElementById('user').innerHTML = `Bienvenido ${user.name}` : document.getElementById('user').innerHTML =`Bienvenido Guest`;
     
-    //Cargamos la documentacion guardada en la billetera abajo de todo y solamente falta parsearla.
+//Loading Save Values on Local Storage
     let wallet = JSON.parse(localStorage.getItem('billetera'));
     let btc = JSON.parse(localStorage.getItem('cripto'));
-    
+
+    //Condition(If there's a null result on Local Storage Loading, Set the Wallets To 0)
     if(wallet === null && btc === null){
         wallet=0;
         btc=0;
     }
 
+//DOM properties to show values in wallet Ars & BTC
 document.getElementById("wallet").innerHTML = `<p>ARS$ ${wallet}  y BTC$ ${btc}  </p>`
 document.getElementById("wallet-sidebar").innerHTML = `<p>ARS$ ${wallet}  y BTC$ ${btc}  </p>`
 
-const cryptoTrade = () =>{ //la idea a futuro es meter API para sacar el valor diario del BTC para poder hacer la conversion
+//Function that buys Crypto
+const cryptoTrade = () =>{
 
     amount = parseInt( document.getElementById('exchange').value);
     if(wallet >= 0 && amount <= wallet){
@@ -58,20 +55,26 @@ const cryptoTrade = () =>{ //la idea a futuro es meter API para sacar el valor d
             `Perfecto, compraste ${btc} en BTC`,
             'success'
         )
-    //    alert(`Perfecto, compraste ${btc} en BTC`);
         document.getElementById("wallet").innerHTML = `<p>ARS$${wallet} y BTC${btc}</p>`;
         document.getElementById("wallet-sidebar").innerHTML = `<p>ARS$ ${wallet}  y BTC$ ${btc}  </p>`
     }
     else if(document.getElementById('amountIn').value = isNaN(amount)){
         document.getElementById('validate').innerHTML = `<p class = " p-2 text-center border border-danger rounded">X No has ingresado un monto en particular, por favor reintenta.</p>`;
+        setTimeout(() => {
+            document.getElementById('validate').innerHTML = `<p class = "d-none"></p>`;
+    },5000)
     }
     else{
         document.getElementById('validate').innerHTML = `<p class = " p-2 text-center border border-danger rounded">X No contas con dinero para hacer la transaccion</p>`;
+        setTimeout(() => {
+            document.getElementById('validate').innerHTML = `<p class = "d-none"></p>`;
+    },5000)
     }
     let arsLoad = localStorage.setItem('billetera', wallet);
     let btcLoad = localStorage.setItem('cripto', btc);
     return;
 }
+//Function that inserts Money
 const moneyIn = document.getElementById('amountInBtn') 
 moneyIn.onclick = () => { //funcion que ingresa dinero, como es infinito, sin problemas (por ahora, la idea es meter un href a mercadopago.)
     if(amount = parseInt( document.getElementById('amountIn').value)){
@@ -86,11 +89,15 @@ moneyIn.onclick = () => { //funcion que ingresa dinero, como es infinito, sin pr
     }
     else if(document.getElementById('amountIn').value = isNaN(amount)){
         document.getElementById('validate').innerHTML = `<p class = " p-2 text-center border border-danger rounded">X No has ingresado un monto en particular, por favor reintenta.</p>`;
+        setTimeout(() => {
+            document.getElementById('validate').innerHTML = `<p class = "d-none"></p>`;
+    },5000)
     }
     let arsLoad = localStorage.setItem('billetera', wallet);
     let btcLoad = localStorage.setItem('cripto', btc);
     return;
 }
+//Function that Extracts Money
 const moneyOut = document.getElementById('amountOutBtn')
 moneyOut.onclick = () =>{ //funcion que saca dinero de input para actualizar wallet.
     amount = parseInt(document.getElementById('amountOut').value);
@@ -107,9 +114,15 @@ moneyOut.onclick = () =>{ //funcion que saca dinero de input para actualizar wal
     
     else if(document.getElementById('amountIn').value = isNaN(amount)){
         document.getElementById('validate').innerHTML = `<p class = " p-2 text-center border border-danger rounded">X No has ingresado un monto en particular, por favor reintenta.</p>`;
+        setTimeout(() => {
+            document.getElementById('validate').innerHTML = `<p class = "d-none"></p>`;
+    },5000)
     }
     else{
         document.getElementById('validate').innerHTML = `<p class = " p-2 text-center border border-danger rounded">X No es posible realizar la transaccion</p>`;
+        setTimeout(() => {
+            document.getElementById('validate').innerHTML = `<p class = "d-none"></p>`;
+    },5000)
     }
     let arsLoad = localStorage.setItem('billetera', wallet);
     let btcLoad = localStorage.setItem('cripto', btc);
