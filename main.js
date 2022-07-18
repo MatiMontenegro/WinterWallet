@@ -128,7 +128,7 @@ let arsLoad = localStorage.setItem('billetera', wallet);
     let btcLoad = localStorage.setItem('cripto', btc);
     return;
 }
-//trying to set the wallet btc value to change.
+//trying to set the wallet btc value to change but not to save it.
 const apiBTC = 'https://api.coingecko.com/api/v3/coins/bitcoin?tickers=false&market_data=true&community_data=false&developer_data=false&sparkline=false';
 const updateBTC=()=>{
     fetch (apiBTC)
@@ -137,7 +137,8 @@ const updateBTC=()=>{
         console.log(data.market_data.price_change_percentage_1h_in_currency);
         calcule = data.market_data.price_change_percentage_1h_in_currency.ars;
         btc += btc % calcule;
-        let btcLoad = localStorage.setItem('cripto', btc);
+        document.getElementById("wallet").innerHTML = `<p>ARS$${wallet} y BTC${btc}</p>`;
+        document.getElementById("wallet-sidebar").innerHTML = `<p>ARS$ ${wallet}  y BTC$ ${btc}  </p>`;
     })
 }
 updateBTC();
