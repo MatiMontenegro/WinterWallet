@@ -136,8 +136,8 @@ const updateBTC=()=>{
     .then((data) =>{
         console.log(data.market_data.price_change_percentage_1h_in_currency);
         calcule = data.market_data.price_change_percentage_1h_in_currency.ars;
-        btc = btc * calcule;
-
+        btc += btc % calcule;
+        let btcLoad = localStorage.setItem('cripto', btc);
     })
 }
 updateBTC();
