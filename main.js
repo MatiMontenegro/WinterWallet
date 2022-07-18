@@ -19,26 +19,26 @@ getCurrencies();
 //Constant Refresh on API call
 setInterval(() => {
     getCurrencies();
-},120000)
+},300000)
 
 //Users:
-    const user = {
-        name : 'Matias',
-        age: 18,
-        isRegistered: true,
-    }
-    user.isRegistered ? document.getElementById('user').innerHTML = `Bienvenido ${user.name}` : document.getElementById('user').innerHTML =`Bienvenido Guest`;
-    
+const user = {
+    name : 'Matias',
+    age: 18,
+    isRegistered: true,
+}
+user.isRegistered ? document.getElementById('user').innerHTML = `Bienvenido ${user.name}` : document.getElementById('user').innerHTML =`Bienvenido Guest`;
+
 //Loading Save Values on Local Storage
-    let wallet = JSON.parse(localStorage.getItem('billetera'));
-    let btc = JSON.parse(localStorage.getItem('cripto'));
+let wallet = JSON.parse(localStorage.getItem('billetera'));
+let btc = JSON.parse(localStorage.getItem('cripto'));
 
     //Condition(If there's a null result on Local Storage Loading, Set the Wallets To 0)
     if(wallet === null && btc === null){
         wallet=0;
         btc=0;
     }
-
+    
 //DOM properties to show values in wallet Ars & BTC
 document.getElementById("wallet").innerHTML = `<p>ARS$ ${wallet}  y BTC$ ${btc}  </p>`
 document.getElementById("wallet-sidebar").innerHTML = `<p>ARS$ ${wallet}  y BTC$ ${btc}  </p>`
@@ -63,8 +63,8 @@ const cryptoTrade = () =>{
         setTimeout(() => {
             document.getElementById('validate').innerHTML = `<p class = "d-none"></p>`;
     },5000)
-    }
-    else{
+}
+else{
         document.getElementById('validate').innerHTML = `<p class = " p-2 text-center border border-danger rounded">X No contas con dinero para hacer la transaccion</p>`;
         setTimeout(() => {
             document.getElementById('validate').innerHTML = `<p class = "d-none"></p>`;
@@ -83,10 +83,10 @@ moneyIn.onclick = () => { //funcion que ingresa dinero, como es infinito, sin pr
             'Transaccion Completa',
             `Felicitaciones, ingresaste ARS$${amount} cantidad de dinero`,
             'success'
-        )
-        document.getElementById("wallet").innerHTML = `<p>ARS$${wallet} y BTC${btc}</p>`;
-        document.getElementById("wallet-sidebar").innerHTML = `<p>ARS$ ${wallet}  y BTC$ ${btc}  </p>`
-    }
+            )
+            document.getElementById("wallet").innerHTML = `<p>ARS$${wallet} y BTC${btc}</p>`;
+            document.getElementById("wallet-sidebar").innerHTML = `<p>ARS$ ${wallet}  y BTC$ ${btc}  </p>`
+        }
     else if(document.getElementById('amountIn').value = isNaN(amount)){
         document.getElementById('validate').innerHTML = `<p class = " p-2 text-center border border-danger rounded">X No has ingresado un monto en particular, por favor reintenta.</p>`;
         setTimeout(() => {
@@ -123,11 +123,28 @@ moneyOut.onclick = () =>{ //funcion que saca dinero de input para actualizar wal
         setTimeout(() => {
             document.getElementById('validate').innerHTML = `<p class = "d-none"></p>`;
     },5000)
-    }
-    let arsLoad = localStorage.setItem('billetera', wallet);
+}
+let arsLoad = localStorage.setItem('billetera', wallet);
     let btcLoad = localStorage.setItem('cripto', btc);
     return;
 }
+//trying to set the wallet btc value to change.
+const apiBTC = 'https://api.coingecko.com/api/v3/coins/bitcoin?tickers=false&market_data=true&community_data=false&developer_data=false&sparkline=false';
+const updateBTC=()=>{
+    fetch (apiBTC)
+    .then((response)=>response.json())
+    .then((data) =>{
+        console.log(data.market_data.price_change_percentage_1h_in_currency);
+        calcule = data.market_data.price_change_percentage_1h_in_currency.ars;
+        btc = btc * calcule;
+
+    })
+}
+updateBTC();
+setInterval(() => {
+updateBTC();
+},300000)
+
 //Local Storage, Saving All Transactions.
 let arsLoad = localStorage.setItem('billetera', JSON.parse(wallet));
 let btcLoad = localStorage.setItem('cripto', JSON.parse(btc));
@@ -137,6 +154,6 @@ var menu_btn = document.querySelector("#menu-btn");
 var sidebar = document.querySelector("#sidebar");
 var container = document.querySelector(".my-container");
 menu_btn.addEventListener("click", () => {
-sidebar.classList.toggle("active-nav");
+    sidebar.classList.toggle("active-nav");
 container.classList.toggle("active-cont");
 });
