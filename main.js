@@ -12,6 +12,9 @@ const getCurrencies = () =>{
     })
     .catch(() =>{
         document.getElementById('currenciesStatus').innerHTML = (`Valores no encontrados, intente luego.`);
+        setTimeout(()=>{
+            document.getElementById('currenciesStatus').innerHTML = (`<p class= d-none></p>`);
+    },300000)
     })
 }
 //First time API CALL
@@ -70,8 +73,9 @@ else{
             document.getElementById('validate').innerHTML = `<p class = "d-none"></p>`;
     },5000)
     }
-    let arsLoad = localStorage.setItem('billetera', wallet);
-    let btcLoad = localStorage.setItem('cripto', btc);
+let arsLoad = localStorage.setItem('billetera', wallet);
+let btcLoad = localStorage.setItem('cripto', btc);
+    exchange.value='';
     return;
 }
 //Function that inserts Money
@@ -93,8 +97,9 @@ moneyIn.onclick = () => { //funcion que ingresa dinero, como es infinito, sin pr
             document.getElementById('validate').innerHTML = `<p class = "d-none"></p>`;
     },5000)
     }
-    let arsLoad = localStorage.setItem('billetera', wallet);
-    let btcLoad = localStorage.setItem('cripto', btc);
+let arsLoad = localStorage.setItem('billetera', wallet);
+let btcLoad = localStorage.setItem('cripto', btc);
+    amountIn.value = '';
     return;
 }
 //Function that Extracts Money
@@ -125,7 +130,8 @@ moneyOut.onclick = () =>{ //funcion que saca dinero de input para actualizar wal
     },5000)
 }
 let arsLoad = localStorage.setItem('billetera', wallet);
-    let btcLoad = localStorage.setItem('cripto', btc);
+let btcLoad = localStorage.setItem('cripto', btc);
+    amountOut.value = '';
     return;
 }
 //trying to set the wallet btc value to change but not to save it.
