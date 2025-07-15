@@ -24,23 +24,19 @@ setInterval(() => {
     getCurrencies();
 },300000)
 
-//Users:
-const user = {
-    name : 'Matias',
-    age: 18,
-    isRegistered: true,
+// Login control
+const currentUser = localStorage.getItem('currentUser');
+if(!currentUser){
+    window.location.href = 'login.html';
 }
-user.isRegistered ? document.getElementById('user').innerHTML = `Bienvenido ${user.name}` : document.getElementById('user').innerHTML =`Bienvenido Guest`;
+document.getElementById('user').textContent = `Bienvenido ${currentUser}`;
 
-//Loading Save Values on Local Storage
-let wallet = JSON.parse(localStorage.getItem('billetera'));
-let btc = JSON.parse(localStorage.getItem('cripto'));
+// Loading wallet values for current user
+let wallet = parseFloat(localStorage.getItem(`wallet_${currentUser}`));
+let btc = parseFloat(localStorage.getItem(`btc_${currentUser}`));
 
-    //Condition(If there's a null result on Local Storage Loading, Set the Wallets To 0)
-    if(wallet === null && btc === null){
-        wallet=0;
-        btc=0;
-    }
+if(isNaN(wallet)) wallet = 0;
+if(isNaN(btc)) btc = 0;
     
 //DOM properties to show values in wallet Ars & BTC
 document.getElementById("wallet").innerHTML = `<p>ARS$ ${wallet}  y BTC$ ${btc}  </p>`
@@ -73,8 +69,8 @@ else{
             document.getElementById('validate').innerHTML = `<p class = "d-none"></p>`;
     },5000)
     }
-let arsLoad = localStorage.setItem('billetera', wallet);
-let btcLoad = localStorage.setItem('cripto', btc);
+localStorage.setItem(`wallet_${currentUser}`, wallet);
+localStorage.setItem(`btc_${currentUser}`, btc);
     exchange.value='';
     return;
 }
@@ -97,8 +93,8 @@ moneyIn.onclick = () => { //funcion que ingresa dinero, como es infinito, sin pr
             document.getElementById('validate').innerHTML = `<p class = "d-none"></p>`;
     },5000)
     }
-let arsLoad = localStorage.setItem('billetera', wallet);
-let btcLoad = localStorage.setItem('cripto', btc);
+localStorage.setItem(`wallet_${currentUser}`, wallet);
+localStorage.setItem(`btc_${currentUser}`, btc);
     amountIn.value = '';
     return;
 }
@@ -129,8 +125,8 @@ moneyOut.onclick = () =>{ //funcion que saca dinero de input para actualizar wal
             document.getElementById('validate').innerHTML = `<p class = "d-none"></p>`;
     },5000)
 }
-let arsLoad = localStorage.setItem('billetera', wallet);
-let btcLoad = localStorage.setItem('cripto', btc);
+localStorage.setItem(`wallet_${currentUser}`, wallet);
+localStorage.setItem(`btc_${currentUser}`, btc);
     amountOut.value = '';
     return;
 }
@@ -153,8 +149,8 @@ updateBTC();
 },300000)
 
 //Local Storage, Saving All Transactions.
-let arsLoad = localStorage.setItem('billetera', JSON.parse(wallet));
-let btcLoad = localStorage.setItem('cripto', JSON.parse(btc));
+localStorage.setItem(`wallet_${currentUser}`, JSON.parse(wallet));
+localStorage.setItem(`btc_${currentUser}`, JSON.parse(btc));
 
 //Sidebar Menu Button 
 var menu_btn = document.querySelector("#menu-btn");
@@ -163,4 +159,11 @@ var container = document.querySelector(".my-container");
 menu_btn.addEventListener("click", () => {
     sidebar.classList.toggle("active-nav");
 container.classList.toggle("active-cont");
+});
+
+// logout button
+const logoutBtn = document.getElementById('logout');
+logoutBtn.addEventListener('click', () => {
+    localStorage.removeItem('currentUser');
+    window.location.href = 'login.html';
 });
