@@ -10,7 +10,7 @@
 	<!--Favicon-->
 	<link rel="icon" href="img/favicon.ico" type="image/x-icon">
 	<!--Google Fonts-->
-	<link href='https://fonts.googleapis.com/css?family=Roboto:400,100,300,700' rel='stylesheet' type='text/css'>
+        <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
 	<!--Sweet Alert 2 Install-->
 	<script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 	<!--Bootstrap-->
@@ -19,12 +19,13 @@
 	<link rel="stylesheet" href="css/style.css">
 </head>
 
-<body style="background-image:url(img/background.png)">
+<body>
 
 <!--Button Sidebar-->
 <div class="side-navbar d-flex justify-content-between flex-wrap flex-column" id="sidebar">
 	<ul class="nav flex-column text-white w-100">
-	<p id="user"class="ml-2 h3 green"></p>
+        <p id="user" class="ml-2 h3 green"></p>
+        <button id="logout" class="btn btn-sm btn-danger mt-2">Salir</button>
 	<div class="total mt-5 col-md-12 text-left lime">Tu dinero es</div>
 		<div id="wallet-sidebar" class="text-left yellow p-0 mt-2" class="text-center"></div>
 	</ul>
