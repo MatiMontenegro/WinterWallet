@@ -1,0 +1,25 @@
+# Runtime configuration (RPC URLs, Supabase keys) — never commit.
+# Anchored to repo root so /js/config.js (a defaults loader) is not ignored.
+/config.js
+
+# OS noise
+.DS_Store
+Thumbs.db
+
+# Editor
+.idea/
+.vscode/
+*.swp
+
+# Node (if a dev server is added later)
+node_modules/
+npm-debug.log*
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Supabase local dev
+supabase/.branches
+supabase/.temp
