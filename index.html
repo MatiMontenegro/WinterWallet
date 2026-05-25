@@ -1,123 +1,37 @@
 <!doctype html>
 <html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="color-scheme" content="dark" />
-  <title>WinterWallet</title>
-  <link rel="icon" href="img/favicon.ico" type="image/x-icon" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="css/style.css" />
-  <script>window.addEventListener("error", (e) => { if (e.filename?.endsWith("/config.js")) e.preventDefault(); }, true);</script>
-  <script src="config.js" onerror="this.remove()"></script>
-</head>
-<body class="ww-page-app">
-  <header class="ww-topbar">
-    <div class="ww-brand-inline">
-      <span class="ww-brand-mark" aria-hidden="true">❄</span>
-      <span class="ww-brand-name">WinterWallet</span>
-    </div>
-    <div class="ww-topbar-actions">
-      <label class="ww-network">
-        <span class="ww-net-label">Network</span>
-        <select id="network-select" aria-label="Network"></select>
-      </label>
-      <label class="ww-mainnet-toggle" title="Show mainnets in the network picker">
-        <input type="checkbox" id="show-mainnet" />
-        <span>Mainnets</span>
-      </label>
-      <button id="account-chip" class="ww-account-chip" type="button" aria-haspopup="menu">
-        <span class="ww-dot" aria-hidden="true"></span>
-        <span id="account-address" class="ww-mono">—</span>
-      </button>
-      <button id="logout-btn" class="ww-btn ww-btn-ghost" type="button">Disconnect</button>
-    </div>
-  </header>
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/icon.svg" />
+    <link rel="alternate icon" href="/favicon.ico" />
 
-  <main class="ww-app">
-    <!-- BALANCE -->
-    <section class="ww-card ww-balance-card" aria-labelledby="balance-h">
-      <header>
-        <h2 id="balance-h">Balance</h2>
-        <button id="refresh-btn" class="ww-btn ww-btn-ghost ww-btn-sm" type="button" aria-label="Refresh balances">↻</button>
-      </header>
-      <div class="ww-balance-row">
-        <div>
-          <div class="ww-balance-amount">
-            <span id="native-amount">0</span>
-            <span id="native-symbol" class="ww-mono ww-muted">ETH</span>
-          </div>
-          <div id="native-fiat" class="ww-muted">—</div>
-        </div>
-        <div class="ww-balance-token">
-          <div class="ww-balance-amount ww-balance-amount-sm">
-            <span id="usdc-amount">0</span>
-            <span class="ww-mono ww-muted">USDC</span>
-          </div>
-          <div id="usdc-fiat" class="ww-muted">—</div>
-        </div>
-      </div>
-      <div class="ww-receive">
-        <span class="ww-muted">Receive at</span>
-        <code id="receive-address" class="ww-mono ww-pill">—</code>
-        <button id="copy-address" class="ww-btn ww-btn-sm ww-btn-ghost" type="button">Copy</button>
-        <a id="explorer-link" class="ww-btn ww-btn-sm ww-btn-ghost" target="_blank" rel="noopener">Explorer ↗</a>
-      </div>
-      <div id="testnet-banner" class="ww-banner ww-banner-info" hidden>
-        You are on a <strong>testnet</strong>. The funds here have no monetary value.
-        <a id="faucet-link" target="_blank" rel="noopener">Get test funds ↗</a>
-      </div>
-      <div id="mainnet-banner" class="ww-banner ww-banner-warn" hidden>
-        ⚠ <strong>Mainnet active.</strong> Transactions move real cryptocurrency and are irreversible.
-      </div>
-    </section>
+    <!-- iOS Home Screen / PWA -->
+    <link rel="apple-touch-icon" href="/apple-touch-icon-180x180.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon-180x180.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="WinterWallet" />
+    <meta name="format-detection" content="telephone=no" />
 
-    <!-- SEND -->
-    <section class="ww-card" aria-labelledby="send-h">
-      <header><h2 id="send-h">Send</h2></header>
-      <form id="send-form" class="ww-form">
-        <label class="ww-field">
-          <span>Asset</span>
-          <select name="asset" id="send-asset">
-            <option value="native">Native (ETH/MATIC)</option>
-            <option value="USDC">USDC</option>
-          </select>
-        </label>
-        <label class="ww-field">
-          <span>Recipient address</span>
-          <input type="text" name="to" required pattern="^0x[a-fA-F0-9]{40}$" placeholder="0x…" autocomplete="off" spellcheck="false" />
-        </label>
-        <label class="ww-field">
-          <span>Amount</span>
-          <div class="ww-input-affix">
-            <input type="number" name="amount" min="0" step="any" required placeholder="0.0" />
-            <button type="button" id="send-max" class="ww-btn ww-btn-sm ww-btn-ghost">Max</button>
-          </div>
-        </label>
-        <div id="gas-estimate" class="ww-muted ww-gas">Estimated network fee: —</div>
-        <button type="submit" class="ww-btn ww-btn-primary ww-btn-block">Review & send</button>
-      </form>
-    </section>
+    <meta name="theme-color" content="#0b0d18" />
+    <meta name="color-scheme" content="dark" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
+    <meta name="description" content="A real, non-custodial EVM wallet — installable on your iPhone, with Sign-In with Ethereum and Postgres RLS." />
 
-    <!-- PRICES (read-only) -->
-    <section class="ww-card" aria-labelledby="prices-h">
-      <header>
-        <h2 id="prices-h">Live prices</h2>
-        <span class="ww-muted ww-tiny">CoinGecko · cached 60s</span>
-      </header>
-      <ul id="prices-list" class="ww-prices"></ul>
-    </section>
+    <!-- Open Graph -->
+    <meta property="og:title" content="WinterWallet" />
+    <meta property="og:description" content="A real, non-custodial EVM wallet you can install on your iPhone." />
+    <meta property="og:type" content="website" />
 
-    <!-- HISTORY -->
-    <section class="ww-card" aria-labelledby="history-h">
-      <header>
-        <h2 id="history-h">Transactions</h2>
-        <span id="history-source" class="ww-muted ww-tiny">on-chain</span>
-      </header>
-      <div id="history-list" class="ww-history"></div>
-    </section>
-  </main>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
 
-  <script type="module" src="js/app.js"></script>
-</body>
+    <title>WinterWallet — Real Web3, in your pocket</title>
+  </head>
+  <body class="bg-[#0b0d18] text-zinc-100 antialiased">
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
 </html>

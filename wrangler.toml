@@ -1,0 +1,11 @@
+# Cloudflare Pages configuration. Used by:
+#   * `pnpm deploy` (manual, via wrangler CLI)
+#   * The GitHub Actions workflow in .github/workflows/deploy.yml
+
+name = "winterwallet"
+compatibility_date = "2026-05-01"
+pages_build_output_dir = "dist"
+
+# Pages will serve `dist/` after Vite builds. The build command is set in the
+# Cloudflare dashboard (or in the GitHub Actions workflow) — wrangler.toml's
+# "build" key is ignored for Pages projects.

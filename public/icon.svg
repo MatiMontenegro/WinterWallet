@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="WinterWallet">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0b0d18"/>
+      <stop offset="100%" stop-color="#1a1d3a"/>
+    </linearGradient>
+    <linearGradient id="snow" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#7cf7c8"/>
+      <stop offset="100%" stop-color="#7aa9ff"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0%" stop-color="#7cf7c8" stop-opacity="0.45"/>
+      <stop offset="100%" stop-color="#7cf7c8" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+  <circle cx="256" cy="256" r="200" fill="url(#glow)"/>
+  <g stroke="url(#snow)" stroke-width="22" stroke-linecap="round" fill="none">
+    <line x1="256" y1="96" x2="256" y2="416"/>
+    <line x1="116" y1="176" x2="396" y2="336"/>
+    <line x1="116" y1="336" x2="396" y2="176"/>
+  </g>
+  <g fill="url(#snow)">
+    <circle cx="256" cy="96"  r="14"/>
+    <circle cx="256" cy="416" r="14"/>
+    <circle cx="116" cy="176" r="14"/>
+    <circle cx="396" cy="336" r="14"/>
+    <circle cx="116" cy="336" r="14"/>
+    <circle cx="396" cy="176" r="14"/>
+  </g>
+</svg>

@@ -1,25 +1,43 @@
-# Runtime configuration (RPC URLs, Supabase keys) — never commit.
-# Anchored to repo root so /js/config.js (a defaults loader) is not ignored.
-/config.js
+# Build output
+dist/
+dist-ssr/
+.cache/
+.parcel-cache/
+*.tsbuildinfo
 
-# OS noise
-.DS_Store
-Thumbs.db
-
-# Editor
-.idea/
-.vscode/
-*.swp
-
-# Node (if a dev server is added later)
+# Vite + Node
 node_modules/
+.pnp
+.pnp.js
+*.log
 npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
-# Environment
+# Environment (only .example files are committed)
 .env
 .env.local
 .env.*.local
 
+# Editor / OS
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/settings.example.json
+*.swp
+
 # Supabase local dev
 supabase/.branches
 supabase/.temp
+
+# Cloudflare / Wrangler
+.wrangler/
+.dev.vars
+
+# Generated PWA assets (regenerated at build time from public/icon.svg)
+# We commit them so first-time clones work without `pnpm generate-pwa-assets`.
+# (Override here if you'd rather not.)
+# public/pwa-*.png
+# public/apple-touch-icon.png

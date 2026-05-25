@@ -1,166 +1,155 @@
 # Row Level Security
 
-This document maps every table, every policy, and explains how to verify
-that the database itself rejects cross-wallet access.
+The schema in [`supabase/schema.sql`](../supabase/schema.sql) enables RLS
+on every public table. Postgres itself — not the browser, not the
+application code — enforces who can read or write what.
 
 ## The claim that drives every policy
 
-After a successful SIWE sign-in, the Edge Function creates (or updates) the
-authenticated user with `app_metadata.wallet_address = <lower(address)>`.
-Supabase signs that into the JWT, where it appears at:
-
-```
-auth.jwt() -> 'app_metadata' ->> 'wallet_address'
-```
-
-We expose a stable, typed helper:
+After a successful Supabase Auth login (email/password, magic link, or
+the SIWE Edge Function path), the session JWT carries the user's `auth.uid()`.
+That's what every policy compares against.
 
 ```sql
-create or replace function public.current_wallet()
-returns text language sql stable as $$
-  select lower(coalesce(
-    auth.jwt() ->> 'wallet_address',
-    auth.jwt() -> 'app_metadata' ->> 'wallet_address'
-  ))
-$$;
+auth.uid()        -- the authenticated Supabase user id (UUID)
 ```
-
-Every policy compares its row to `public.current_wallet()`. Because the JWT
-is signed with the project's JWT secret, a stolen anon key cannot forge it.
 
 ## Tables and policies
 
-### `profiles` (one row per wallet)
+### `profiles` (1 row per user)
 
-| Operation | Policy | Predicate |
-| --- | --- | --- |
-| `SELECT` | `profiles_select_own` | `wallet_address = current_wallet()` |
-| `INSERT` | `profiles_insert_own` | `WITH CHECK (wallet_address = current_wallet())` |
-| `UPDATE` | `profiles_update_own` | both `USING` and `WITH CHECK` clauses |
-| `DELETE` | (none) | nobody can delete profiles |
+| Operation | Predicate |
+| --- | --- |
+| `SELECT` | `user_id = auth.uid()` |
+| `UPDATE` | `user_id = auth.uid()` (USING + WITH CHECK) |
+| `INSERT` | **no user policy** — only the `handle_new_user` trigger (SECURITY DEFINER) inserts |
+| `DELETE` | **no policy** — profiles cannot be deleted by users |
+
+### `wallets` (many per user)
+
+| Operation | Predicate |
+| --- | --- |
+| `SELECT` | `user_id = auth.uid()` |
+| `ALL`    | `user_id = auth.uid()` (a single `FOR ALL` policy for CRUD) |
+
+A partial unique index `wallets_one_primary` enforces at most one
+`is_primary = true` row per user.
 
 ### `transactions` (append-only history)
 
-| Operation | Policy | Predicate |
-| --- | --- | --- |
-| `SELECT` | `tx_select_own` | `wallet_address = current_wallet()` |
-| `INSERT` | `tx_insert_own` | `WITH CHECK (wallet_address = current_wallet())` |
-| `UPDATE` | `tx_update_own` | restricted to `status`, `block_number`, `gas_used` columns via `GRANT UPDATE (...)` to `authenticated` |
-| `DELETE` | (none) | append-only |
+| Operation | Predicate |
+| --- | --- |
+| `SELECT` | `user_id = auth.uid()` |
+| `INSERT` | `user_id = auth.uid()` (`WITH CHECK`) |
+| `UPDATE` | `user_id = auth.uid()` *but* `GRANT UPDATE (status, block_number, gas_used) ONLY` |
+| `DELETE` | **no policy** — history is immutable |
 
-The column-level grant is critical: the policy alone permits `UPDATE`, but
-without the column grant the user cannot rewrite `wallet_address`,
-`tx_hash`, `counterparty`, `amount`, or `direction`. History stays
-tamper-evident.
+The column-level grant matters. Without it, users could rewrite
+`counterparty` or `amount` on their own rows. With it, the only
+columns mutable post-broadcast are the receipt fields.
 
-### `address_book`
+### `commissions` (operator revenue ledger)
 
-| Operation | Policy | Predicate |
-| --- | --- | --- |
-| `ALL` (CRUD) | `ab_modify_own` | `wallet_address = current_wallet()` (USING & WITH CHECK) |
+| Operation | Predicate |
+| --- | --- |
+| `SELECT` | **`false`** — denies all reads from `authenticated` / `anon` |
+| writes   | **no policy** — only the service-role key (Edge Function / cron) can write |
 
-A single `FOR ALL` policy is fine here because users *should* be able to
-delete their own contacts.
+This is intentional. The `commissions` table is your private revenue
+ledger. The browser-shipped anon key cannot see it under any
+circumstance. Only your operator dashboard, using the service-role key
+from a trusted environment, populates and reads it.
 
-## What an attacker with the anon key can do
+## Verifying the deny
 
-Test it yourself:
+Three independent checks. Run them after every schema change.
+
+### 1. RLS is actually enabled
+
+```sql
+select tablename, rowsecurity from pg_tables
+ where schemaname = 'public'
+   and tablename in ('profiles','wallets','transactions','commissions');
+```
+
+All four must show `rowsecurity = true`. If any is `false`, an
+`alter table … enable row level security;` was missed.
+
+### 2. The anon key reads zero rows
 
 ```bash
 curl -s "$SUPABASE_URL/rest/v1/transactions?select=*" \
-     -H "apikey: $ANON_KEY" \
-     -H "Authorization: Bearer $ANON_KEY"
-# → []   (RLS denies the read)
+  -H "apikey: $ANON_KEY" \
+  -H "Authorization: Bearer $ANON_KEY"
+# Expected: []
+```
 
+Anon writes should also fail:
+
+```bash
 curl -s "$SUPABASE_URL/rest/v1/transactions" \
-     -H "apikey: $ANON_KEY" \
-     -H "Authorization: Bearer $ANON_KEY" \
-     -H "Content-Type: application/json" \
-     -d '{"wallet_address":"0x000…","tx_hash":"0x…","chain_id":1, ...}'
-# → {"code":"42501","message":"new row violates row-level security policy ..."}
+  -H "apikey: $ANON_KEY" \
+  -H "Authorization: Bearer $ANON_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"user_id":"00000000-0000-0000-0000-000000000000","tx_hash":"0x…","chain_id":1, …}'
+# Expected: {"code":"42501","message":"new row violates row-level security policy"}
 ```
 
-The same calls with a freshly-issued user JWT succeed only when
-`wallet_address` matches the JWT's `wallet_address` claim.
+### 3. Cross-user isolation
 
-## Cross-wallet test
-
-Sign in as wallet A, insert a tx, then sign in as wallet B and try to read
-or update wallet A's row. RLS rejects both — the row is invisible.
+Sign in as user A (browser session 1), insert a transaction. Sign in as
+user B (browser session 2 — incognito), call:
 
 ```sql
--- as wallet A:
-select set_config('request.jwt.claims',
-                  '{"role":"authenticated","app_metadata":{"wallet_address":"0xaaa…"}}',
-                  true);
-insert into transactions (wallet_address, tx_hash, chain_id, direction,
-                          counterparty, amount, asset_symbol)
-values ('0xaaa…', '0x' || repeat('a',64), 11155111, 'out',
-        '0xbbb…', '0.01', 'ETH');
-
--- as wallet B:
-select set_config('request.jwt.claims',
-                  '{"role":"authenticated","app_metadata":{"wallet_address":"0xbbb…"}}',
-                  true);
-select * from transactions;             -- → 0 rows
-update transactions set status='confirmed' where wallet_address='0xaaa…'; -- → 0 rows
+select count(*) from transactions where user_id = '<user A id>';
+-- Returns 0. RLS hides A's rows from B.
 ```
 
-## Common mistakes (and how to avoid them)
+## Common mistakes (and fixes)
 
-### "RLS is enabled but everything is visible"
-
-You probably forgot `revoke select on … from anon` or the table has a
-permissive policy you didn't expect. Run:
+**RLS is on but everything is visible.**
+Check `pg_policy`:
 
 ```sql
-select tablename, rowsecurity
-  from pg_tables
- where schemaname = 'public'
-   and tablename in ('profiles','transactions','address_book');
--- expect rowsecurity = true on each.
-
-select polname, polrelid::regclass, polcmd, pg_get_expr(polqual, polrelid) as using
+select polname, polrelid::regclass, polcmd, pg_get_expr(polqual, polrelid) using
   from pg_policy
- where polrelid::regclass::text in ('public.profiles','public.transactions','public.address_book');
+ where polrelid::regclass::text like 'public.%';
 ```
 
-### "Anon writes succeed"
+Look for any policy with `using (true)` — that's an open door.
 
-The anon role bypasses RLS only on tables for which RLS is **not** enabled.
-Make sure `alter table … enable row level security;` ran for every table.
-Supabase additionally lets you `force row level security` to be paranoid:
+**Anon writes succeed.**
+RLS only kicks in if the table has it enabled. Re-check `pg_tables` and
+also consider `alter table … force row level security;` if you want
+RLS even when the table owner is doing the query (paranoid mode).
 
-```sql
-alter table public.transactions force row level security;
-```
+**Service-role key shipped to the browser.**
+Don't. The service-role key bypasses RLS by design — that's why it
+exists. It belongs in Edge Function env or a server you control,
+never in `VITE_*` env vars (which are baked into the browser bundle).
 
-### "Service-role key in the browser"
-
-Don't. The service-role key bypasses RLS by design. Only use it inside Edge
-Functions or trusted server contexts, never `config.js`.
-
-## Extending the model
-
-Add a new table:
+## Adding a new RLS-protected table
 
 ```sql
 create table public.notifications (
-  id bigserial primary key,
-  wallet_address text not null check (wallet_address = lower(wallet_address)),
-  body text not null,
-  read_at timestamptz,
-  created_at timestamptz not null default now()
+  id          bigserial primary key,
+  user_id     uuid not null references auth.users(id) on delete cascade,
+  body        text not null,
+  read_at     timestamptz,
+  created_at  timestamptz not null default now()
 );
+
 alter table public.notifications enable row level security;
+
 create policy notif_select_own on public.notifications
-  for select using (wallet_address = public.current_wallet());
+  for select using (user_id = auth.uid());
+
 create policy notif_insert_own on public.notifications
-  for insert with check (wallet_address = public.current_wallet());
+  for insert with check (user_id = auth.uid());
+
 create policy notif_update_own on public.notifications
-  for update using (wallet_address = public.current_wallet())
-  with check    (wallet_address = public.current_wallet());
+  for update using (user_id = auth.uid())
+  with check    (user_id = auth.uid());
 ```
 
-That is the entire pattern: one helper, one predicate per operation, no
-shortcuts.
+One helper, one predicate per operation. No shortcuts.

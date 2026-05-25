@@ -1,0 +1,66 @@
+name: Deploy to Cloudflare Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+  pull_request: {}
+
+permissions:
+  contents: read
+  deployments: write
+  pull-requests: write
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with: { version: 10 }
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate PWA assets
+        run: pnpm generate-pwa-assets || true
+
+      - name: Type-check
+        run: pnpm typecheck
+
+      - name: Build
+        env:
+          VITE_SUPABASE_URL:              ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY:         ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          VITE_SIWE_VERIFY_URL:           ${{ secrets.VITE_SIWE_VERIFY_URL }}
+          VITE_WALLETCONNECT_PROJECT_ID:  ${{ secrets.VITE_WALLETCONNECT_PROJECT_ID }}
+          VITE_DEFAULT_CHAIN_ID:          ${{ vars.VITE_DEFAULT_CHAIN_ID }}
+          VITE_RPC_SEPOLIA:               ${{ secrets.VITE_RPC_SEPOLIA }}
+          VITE_RPC_MAINNET:               ${{ secrets.VITE_RPC_MAINNET }}
+          VITE_RPC_POLYGON_AMOY:          ${{ secrets.VITE_RPC_POLYGON_AMOY }}
+          VITE_RPC_POLYGON:               ${{ secrets.VITE_RPC_POLYGON }}
+          VITE_FEE_ROUTER_SEPOLIA:        ${{ vars.VITE_FEE_ROUTER_SEPOLIA }}
+          VITE_FEE_ROUTER_MAINNET:        ${{ vars.VITE_FEE_ROUTER_MAINNET }}
+          VITE_FEE_ROUTER_POLYGON_AMOY:   ${{ vars.VITE_FEE_ROUTER_POLYGON_AMOY }}
+          VITE_FEE_ROUTER_POLYGON:        ${{ vars.VITE_FEE_ROUTER_POLYGON }}
+          VITE_FEE_BPS:                   ${{ vars.VITE_FEE_BPS }}
+          VITE_APP_NAME:                  ${{ vars.VITE_APP_NAME }}
+          VITE_APP_URL:                   ${{ vars.VITE_APP_URL }}
+        run: pnpm build
+
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy dist --project-name=${{ vars.CLOUDFLARE_PROJECT_NAME || 'winterwallet' }} --branch=${{ github.head_ref || github.ref_name }}

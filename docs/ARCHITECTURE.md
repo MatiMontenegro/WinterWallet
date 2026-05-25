@@ -1,150 +1,175 @@
 # Architecture
 
-WinterWallet is a static, dependency-free frontend that talks directly to
-EVM-family blockchains via JSON-RPC. Optionally, it talks to Supabase for
-persisted, RLS-protected history.
+WinterWallet is a Vite-bundled React SPA, signed and sealed at build time,
+deployed to Cloudflare Pages. The frontend talks directly to EVM chains
+via JSON-RPC (through viem/wagmi) and to Supabase for persisted data.
 
 ```
-                       ┌──────────────────────────────────────────┐
-                       │              Browser (client)            │
-                       │                                          │
-   ┌─────────────┐     │  ┌──────────────┐     ┌───────────────┐  │
-   │ User wallet │◄───►│  │  wallet.js   │     │   ui.js       │  │
-   │  (MetaMask) │     │  │  (signer)    │     │   modals/etc. │  │
-   └─────────────┘     │  └──────┬───────┘     └───────┬───────┘  │
-                       │         │                     │          │
-                       │  ┌──────▼─────────────────────▼───────┐  │
-                       │  │  app.js (dashboard wiring)         │  │
-                       │  │  login.js (connect screen)         │  │
-                       │  └──────┬─────────────┬─────────┬─────┘  │
-                       │         │             │         │        │
-                       │   ethers│RPC          │SIWE     │Supabase│
-                       │         │             │POST     │JS SDK  │
-                       └─────────┼─────────────┼─────────┼────────┘
-                                 │             │         │
-                       ┌─────────▼───┐  ┌──────▼────┐ ┌──▼─────────┐
-                       │  EVM RPC    │  │ Edge Func │ │ Postgres   │
-                       │ (Sepolia,   │  │ siwe-     │ │ (RLS on    │
-                       │  Polygon,   │  │ verify    │ │  every     │
-                       │  mainnets)  │  │           │ │  table)    │
-                       └─────────────┘  └───────────┘ └────────────┘
+                ┌────────────────────────────────────────────────────┐
+                │       Browser  ·  Safari iPhone (PWA)              │
+                │  ┌─────────────────────────────────────────────┐   │
+                │  │           React 19 + Vite SPA               │   │
+                │  │                                             │   │
+                │  │  RainbowKit ──► wagmi ──► viem ──► JSON-RPC │   │
+                │  │       │                                     │   │
+                │  │       ▼                                     │   │
+                │  │  user wallet (MetaMask / WalletConnect)     │   │
+                │  │                                             │   │
+                │  │  Supabase JS SDK ──► PostgREST / Auth       │   │
+                │  └─────────────────────────────────────────────┘   │
+                └───────────┬───────────────────┬─────────────────┬──┘
+                            │JSON-RPC           │HTTPS            │HTTPS
+                ┌───────────▼─────┐   ┌─────────▼─────────┐  ┌───▼──────────┐
+                │  EVM chain RPC  │   │   Supabase Auth   │  │  CoinGecko   │
+                │  (Sepolia,      │   │   + Postgres RLS  │  │  (prices)    │
+                │   Polygon, …)   │   │                   │  │              │
+                └─────────────────┘   └─────────┬─────────┘  └──────────────┘
+                                                │
+                            ┌───────────────────▼──────────────┐
+                            │ Edge Function: siwe-verify (Deno)│
+                            │ verifies EIP-4361 → mints session│
+                            └──────────────────────────────────┘
+
+                ┌─────────────────────────────────────────────────┐
+                │           On-chain (FeeRouter.sol)              │
+                │   sendNative(to)  /  sendToken(token,to,amount) │
+                │   ── splits user amount: (1-feeBps) → recipient │
+                │                          feeBps         → owner │
+                └─────────────────────────────────────────────────┘
 ```
 
-## Modules
+## Module map
 
-### `js/wallet.js`
+### `src/lib`
 
-Single source of truth for "who is the active signer".
+- **`wagmi.ts`** — RainbowKit's `getDefaultConfig` wired with our chain list
+  and optional custom RPC URLs.
+- **`chains.ts`** — per-chain metadata (display name, USDC address, faucet
+  URLs, fee-router lookup). The single place to add a new EVM chain.
+- **`feeRouter.ts`** — ABI + `quoteNative` / `quoteErc20` (compute fee &
+  recipient amount in BigInts). Used by SendCard.
+- **`supabase.ts`** — singleton Supabase client, typed table row shapes.
+- **`siwe.ts`** — EIP-4361 message builder + `exchangeSiwe` (POST to the
+  Edge Function, install the returned session).
+- **`prices.ts`** — CoinGecko `/simple/price` with a 60-s in-memory cache.
+- **`utils.ts`** — `cn`, `shortAddress`, `fmtNumber`, `fmtUsd`, iOS detection,
+  standalone-mode detection.
+- **`env.ts`** — runtime-typed VITE_* env accessor with safe defaults.
 
-- Two backends: **injected** (EIP-1193, MetaMask et al.) and **local**
-  (in-browser `ethers.HDNodeWallet` decrypted from a PBKDF2 envelope).
-- Exposes a uniform API: `getSigner()`, `getProvider()`, `sendNative()`,
-  `estimateNative()`, `getNativeBalance()`, `signMessage()`,
-  `switchChain()`.
-- Emits `unlocked`, `accountChanged`, `chainChanged`, `logout` events that
-  `app.js` listens to.
-- Persists only **public**, non-sensitive metadata to `localStorage`
-  (active mode, cached address). The encrypted mnemonic envelope is the only
-  piece of cryptographic material at rest, and it is unrecoverable without
-  the user's password.
+### `src/hooks`
 
-### `js/crypto.js`
+- **`useAuth.ts`** — exposes Supabase session via `useSyncExternalStore`,
+  so any component can react to sign-in / sign-out.
+- **`useTokenBalance.ts`** — wagmi `useReadContract` on `balanceOf`,
+  polled every 15 s.
+- **`useTransactionHistory.ts`** — TanStack Query against the
+  RLS-protected `transactions` table.
 
-Password-based encryption layer.
+### `src/components`
 
-- `encryptString(plaintext, password)` → JSON envelope with `salt`, `iv`,
-  ciphertext, KDF parameters.
-- `decryptString(envelope, password)` → throws `Incorrect password.` on AES-GCM
-  authentication failure.
-- Algorithm: PBKDF2-HMAC-SHA256, 210 000 iterations, 16-byte salt → AES-GCM
-  256-bit, 12-byte IV.
+- **`AuthShell.tsx`** — gradient background, animated logo, header used
+  by every auth screen.
+- **`Button.tsx` / `Field.tsx` / `Modal.tsx` / `Toast.tsx`** — minimal,
+  framework-free primitives.
+- **`TopBar.tsx`** — sticky header with RainbowKit connect button + sign-out.
+- **`BalanceCard.tsx`** — total USD, native + USDC tiles, copy address,
+  testnet/mainnet banner.
+- **`SendCard.tsx`** — the send form. Routes through FeeRouter when one is
+  configured for the active chain; otherwise direct transfer. Inserts a
+  pending row into Supabase, watches the receipt, updates status.
+- **`HistoryCard.tsx`** — pulls from Supabase, surfaces fees if any.
+- **`InstallPrompt.tsx`** — iOS-only banner pointing at the Share-Sheet
+  install step. Self-dismissing, 7-day cooldown.
 
-### `js/network.js`
+### `src/routes`
 
-Chain registry. Each chain entry carries its `chainId`, hex form,
-display name, native symbol, block-explorer base URL, faucet links, the
-`isTestnet` flag, and a per-chain token table (USDC for now). The active
-chain is persisted in `localStorage` under `ww:chainId`.
+- **`Login.tsx`** — email + password OR magic link, animated background.
+- **`Signup.tsx`** — email + password + display-name with live strength meter.
+- **`ForgotPassword.tsx`** — Supabase reset flow.
+- **`AuthCallback.tsx`** — handles email confirmation / magic-link /
+  password-reset redirects.
+- **`Dashboard.tsx`** — the wallet panel itself.
 
-### `js/erc20.js`
+### `contracts/FeeRouter.sol`
 
-Minimal ERC-20 client (read & write) using ethers.js Contract bindings. The
-ABI contains only the four functions needed: `name`, `symbol`, `decimals`,
-`balanceOf`, `transfer`.
+A ~150-line, owner-administered Solidity contract that splits incoming
+transfers between the recipient and the operator (you), with the fee rate
+hard-capped at 1% in the bytecode. See [`MONETIZATION.md`](MONETIZATION.md)
+and [`contracts/README.md`](../contracts/README.md).
 
-### `js/siwe.js`
+### `supabase/`
 
-EIP-4361 message builder. We deliberately do not depend on the `siwe`
-package — the message format is small, and the only verification happens
-server-side.
+- **`schema.sql`** — four tables (`profiles`, `wallets`, `transactions`,
+  `commissions`) with RLS enabled on every one. See [`RLS.md`](RLS.md).
+- **`functions/siwe-verify/index.ts`** — Deno Edge Function: parses an
+  EIP-4361 message, verifies the signature, upserts an auth user, returns
+  a session.
 
-### `js/supabase.js`
+## Data flow: a send transaction
 
-Lazy Supabase client. Exposes `recordTransaction`, `listTransactions`,
-`addContact`, `listContacts`, `siweLogin`, `siweLogout`. All writes go to
-tables protected by RLS — see [`RLS.md`](RLS.md).
+```
+ user fills SendCard
+        │
+        ▼
+ Quote = (amount * feeBps) / 10000        ←── feeRouter.quote*
+        │
+        ▼
+ Modal shows:  recipient gets X, fee Y, network Z
+        │
+        ▼  user clicks "Send"
+        │
+        ▼
+ wagmi.useWriteContract / useSendTransaction
+   ├─ native: sendTx(to=router, value=total, data=sendNative(recipient))
+   └─ erc20:  approve(router, total) → router.sendToken(token, recipient, total)
+        │
+        ▼
+ RainbowKit-connected wallet signs and broadcasts
+        │
+        ▼
+ We get a tx hash → insert pending row into transactions  (RLS: user_id = auth.uid())
+        │
+        ▼
+ viem.publicClient.waitForTransactionReceipt(hash)
+        │
+        ▼
+ Update row to confirmed/reverted + receipt fields
+        │
+        ▼
+ TanStack Query refetches → HistoryCard re-renders
+```
 
-### `js/prices.js`
+## Build pipeline
 
-CoinGecko `/simple/price` consumer with a 60-second in-memory cache and
-serve-stale-on-error fallback.
+```
+GitHub push
+     │
+     ▼
+GitHub Actions (deploy.yml) — optional path
+  ├─ pnpm install --frozen-lockfile
+  ├─ pnpm typecheck                  ←── catches typos before they ship
+  ├─ pnpm generate-pwa-assets        ←── PNGs from icon.svg
+  ├─ pnpm build  (tsc → vite)        ←── per-locale code-split, sourcemaps
+  └─ wrangler pages deploy dist
+     │
+     ▼
+Cloudflare Pages — global CDN
+  ├─ _headers   → CSP, HSTS, X-Frame-Options, immutable cache for /assets
+  ├─ _redirects → SPA fallback (* → /index.html)
+  └─ /sw.js     → Workbox precache (5 MB shell), runtime cache for CoinGecko
+```
 
-### `js/ui.js`
+## Why a service worker on a wallet?
 
-Tiny DOM helpers: `$`/`$$`, toast, modal `confirmDialog`, `copy`,
-`shortAddress`, `escapeHtml`, busy-button decorator, number formatter.
+Three concrete wins:
 
-## Backend (optional)
+1. **Cold-start latency.** After the first install the shell is local; the
+   wallet opens in ~100 ms even on cellular.
+2. **PWA installability.** iOS requires a registered service worker for
+   `Add to Home Screen` to behave as a standalone app.
+3. **Resilience.** If a CDN edge has a hiccup, the app loads from cache
+   and just shows a "reconnecting…" balance.
 
-### `supabase/schema.sql`
-
-Three tables — `profiles`, `transactions`, `address_book` — plus a helper
-function `public.current_wallet()` that pulls the wallet from the JWT and
-lowercases it. RLS policies on every table compare each row's
-`wallet_address` against `current_wallet()`. See [`RLS.md`](RLS.md).
-
-### `supabase/functions/siwe-verify`
-
-A Deno Edge Function. Verifies the SIWE signature with
-`ethers.verifyMessage`, upserts an auth user that carries `wallet_address`
-in `app_metadata` (so it is signed into every JWT), and returns access /
-refresh tokens for that user.
-
-## Data flow
-
-### Sending a transaction
-
-1. User submits `{ to, amount, asset }` from the Send card.
-2. `app.js` calls `wallet.sendNative()` or `erc20.sendToken()`.
-3. ethers signs:
-   - injected mode → wallet extension prompts the user;
-   - local mode → the in-memory `ethers.Wallet` signs immediately.
-4. Tx is broadcast via JSON-RPC; we receive a hash.
-5. (Optional) `supabase.recordTransaction()` inserts a row with
-   `status='pending'`. RLS allows the insert because the row's
-   `wallet_address` matches the JWT claim.
-6. `tx.wait()` resolves with a receipt. We update the row to
-   `confirmed`/`reverted` and refresh the UI.
-
-### Authentication (SIWE)
-
-1. User clicks "Sign message" — handled in `supabase.siweLogin()`.
-2. We build an EIP-4361 message in `siwe.js` and ask the wallet to sign it.
-3. We POST the message + signature to the `siwe-verify` Edge Function.
-4. The function verifies with `ethers.verifyMessage`, upserts the auth user,
-   issues a magic-link OTP server-side, exchanges it for an access token, and
-   returns `{ access_token, refresh_token, expires_at }`.
-5. The browser sets that session into its Supabase client. Subsequent reads
-   and writes carry `auth.jwt()->>'wallet_address'`, which RLS uses to gate
-   every row.
-
-## Why static + ESM CDN?
-
-- **Easy hosting.** GitHub Pages, Netlify, Cloudflare Pages — no build, no
-  Node runtime needed.
-- **Auditable.** Every file in this repo is the file the browser executes.
-  No bundler magic.
-- **Small attack surface.** The only third-party script tags load
-  `ethers@6` and `@supabase/supabase-js@2` from `esm.sh` (`pinned versions`).
-  See [`SECURITY.md`](SECURITY.md) for hardening tips
-  (subresource integrity, self-hosting the libs).
+What it deliberately does **not** cache: signed transactions, RPC reads,
+Supabase responses. Anything that must reflect real on-chain state is
+network-only.

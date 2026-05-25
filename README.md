@@ -1,141 +1,142 @@
 # WinterWallet
 
-A **real, non-custodial EVM wallet** that runs as a static site. WinterWallet
-talks directly to Ethereum-family blockchains over JSON-RPC, signs every
-transaction locally, and uses Postgres Row Level Security to keep per-wallet
-data isolated.
+A **real, non-custodial EVM wallet** built with the 2026 reference stack
+and installable on your iPhone in 20 seconds.
 
-> **What "real" means.** WinterWallet is not a simulation and does not store
-> fake balances. It signs and broadcasts genuine transactions. By default it
-> runs on the **Sepolia testnet** so you can experiment without spending real
-> money. Mainnet networks are available behind an explicit toggle and an
-> in-app confirmation that warns you funds and gas fees are real.
+[![Open in Cloudflare Pages](https://img.shields.io/badge/Deploy-Cloudflare%20Pages-F38020?logo=cloudflare&logoColor=white)](docs/DEPLOY.md)
+[![PWA](https://img.shields.io/badge/PWA-installable-blue)](docs/PWA-INSTALL.md)
 
----
+```
+┌──────────────────────────────────────────────────────────────────┐
+│  React 19 + Vite 6  ·  wagmi v2 + viem v2  ·  RainbowKit v2      │
+│  Tailwind v4  ·  TanStack Query  ·  vite-plugin-pwa              │
+│  Supabase (Auth · Postgres · RLS · Edge Functions)               │
+│  Cloudflare Pages  ·  GitHub Actions  ·  Workbox SW              │
+│  FeeRouter Solidity contract (1% hard-capped commission)         │
+└──────────────────────────────────────────────────────────────────┘
+```
 
-## Features
+## What this is
 
-| Capability | How |
-| --- | --- |
-| Connect MetaMask / Rabby / Brave Wallet | EIP-1193 injected provider |
-| Create a fresh wallet in the browser | BIP-39 mnemonic, encrypted with PBKDF2 (210k) + AES-GCM |
-| Import an existing 12 / 24-word phrase | Re-encrypted with a local password |
-| Send native asset (ETH / MATIC) | Real on-chain transfers, EIP-1559 fees |
-| Send ERC-20 (USDC out of the box) | Standard `transfer()` |
-| Live gas estimation | `eth_estimateGas` + `eth_feeHistory` |
-| Live USD prices | CoinGecko (no API key, 60 s cache) |
-| Multi-network: Sepolia, Polygon Amoy, Ethereum mainnet, Polygon mainnet | Built-in chain registry, in-wallet `wallet_switchEthereumChain` |
-| Sign-In With Ethereum (EIP-4361) | Supabase Edge Function verifies the signature and mints a session |
-| Per-wallet transaction history | Postgres table protected by **real RLS policies** keyed to the JWT's `wallet_address` claim |
-| Address book | Same RLS pattern |
-| Block explorer deep-links | Per-network |
+- **A real wallet**, not a demo. It signs and broadcasts genuine on-chain
+  transactions using user-controlled keys (browser-extension or
+  WalletConnect — keys never enter our domain).
+- **An iPhone-installable PWA**. Open the URL in Safari, tap *Add to Home
+  Screen*, and you have a fullscreen app with its own icon. No App Store,
+  no Apple Developer fee, no review.
+- **A revenue product.** Optional `FeeRouter` smart contract collects a
+  hard-capped (≤1%) commission on every send, in a single user-signed
+  transaction. See [`docs/MONETIZATION.md`](docs/MONETIZATION.md) for the
+  business model and realistic earning projections.
+- **Postgres RLS done right.** Every persisted row is gated by
+  `auth.uid()` policies in the database itself — a leaked anon key reads
+  nothing.
 
----
+## Quick start
 
-## Quick start (testnet, no backend)
+```bash
+pnpm install
+cp .env.example .env.local      # then fill in the values you have
+pnpm dev                        # → http://localhost:5173
+```
 
-1. Clone the repo and serve it with any static file server. Example:
-   ```bash
-   npx http-server -c-1 .
-   # or: python3 -m http.server 8080
-   ```
-2. Open `http://localhost:8080/login.html`.
-3. Either click **Connect browser wallet** (MetaMask) or use **Create wallet**
-   to generate one in-browser. Save the recovery phrase somewhere safe.
-4. The default network is **Sepolia**. Use the on-page faucet link to fund
-   your address with test ETH, then send it to another address.
+The app runs in "demo mode" without Supabase. Connect MetaMask / Rabby /
+WalletConnect, switch to **Sepolia** in the picker, fund the address from
+[a faucet](https://www.alchemy.com/faucets/ethereum-sepolia), and send a
+testnet transaction.
 
-That's it — no backend, no database, no build step. The wallet is fully
-functional this way; you just won't have persistent transaction history.
+## One-time deployment
 
-## Optional: enable transaction history with Supabase + RLS
+The fastest path to a live URL you can open on your iPhone:
 
-See [`docs/SETUP.md`](docs/SETUP.md) for the full walkthrough. Short version:
+1. Push this repo to GitHub.
+2. Cloudflare Pages → *Connect to Git* → pick the repo. Build command
+   `pnpm install --frozen-lockfile && pnpm build`, output `dist`.
+3. Wait ~2 minutes. You now have `https://<project>.pages.dev`.
+4. Open that URL in Safari on your iPhone → Share → **Add to Home Screen**.
 
-1. Create a Supabase project.
-2. Run [`supabase/schema.sql`](supabase/schema.sql) in the SQL editor — it
-   creates the `profiles`, `transactions`, `address_book` tables and the
-   per-wallet RLS policies.
-3. Set Edge Function secrets and deploy
-   [`supabase/functions/siwe-verify`](supabase/functions/siwe-verify):
-   ```bash
-   supabase secrets set ALLOWED_DOMAIN=yourapp.example
-   supabase functions deploy siwe-verify --no-verify-jwt
-   ```
-4. Copy `config.example.js` to `config.js`, fill in your Supabase URL, anon
-   key, and the function URL.
-5. Reload — the UI will prompt you to sign a SIWE message, after which all
-   reads/writes are RLS-protected.
-
----
+The complete walkthrough — including Supabase setup, custom domain,
+WalletConnect, and the optional GitHub Actions pipeline — is in
+[`docs/DEPLOY.md`](docs/DEPLOY.md).
 
 ## Documentation
 
-- **[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)** — modules and data flow.
-- **[`docs/SECURITY.md`](docs/SECURITY.md)** — threat model, key custody,
-  cryptography choices, what we do *not* defend against.
-- **[`docs/RLS.md`](docs/RLS.md)** — every policy, why it exists, and how to
-  test that an attacker with a stolen anon key still cannot read anyone
-  else's rows.
-- **[`docs/SETUP.md`](docs/SETUP.md)** — end-to-end install (frontend +
-  Supabase + RPC providers).
-- **[`docs/TESTNET.md`](docs/TESTNET.md)** — how to obtain Sepolia / Amoy
-  test funds and execute your first real on-chain send.
-
----
+| Doc | Why you'd read it |
+| --- | --- |
+| [`docs/DEPLOY.md`](docs/DEPLOY.md) | Cloudflare Pages + Supabase, end-to-end |
+| [`docs/PWA-INSTALL.md`](docs/PWA-INSTALL.md) | Install on iPhone in 20 seconds |
+| [`docs/MONETIZATION.md`](docs/MONETIZATION.md) | Commission math, realistic earnings, compliance |
+| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Modules, data flow, build pipeline |
+| [`docs/SECURITY.md`](docs/SECURITY.md) | Threat model, key custody, what we don't defend against |
+| [`docs/RLS.md`](docs/RLS.md) | Every Postgres policy + verification recipe |
+| [`docs/SETUP.md`](docs/SETUP.md) | Local development setup |
+| [`docs/TESTNET.md`](docs/TESTNET.md) | First-tx walkthrough, faucets |
+| [`contracts/README.md`](contracts/README.md) | Deploying the FeeRouter contract |
 
 ## Project layout
 
 ```
 .
-├── index.html                          # main wallet dashboard
-├── login.html                          # connect / create / import / unlock
-├── config.example.js                   # runtime config template (gitignored copy: config.js)
-├── css/style.css                       # dark, framework-free design system
-├── js/
-│   ├── app.js                          # dashboard wiring
-│   ├── login.js                        # auth screen wiring
-│   ├── wallet.js                       # injected + in-browser wallet abstraction
-│   ├── crypto.js                       # PBKDF2 + AES-GCM for mnemonic at rest
-│   ├── network.js                      # chain registry (testnets + mainnets)
-│   ├── erc20.js                        # ERC-20 read/write helpers
-│   ├── prices.js                       # CoinGecko price oracle
-│   ├── siwe.js                         # EIP-4361 message builder
-│   ├── supabase.js                     # client + RLS-protected data ops
-│   ├── ui.js                           # toast, modal, copy, formatting
-│   └── config.js                       # config defaults loader
+├── index.html                          # Vite entry with iOS PWA meta tags
+├── vite.config.ts                      # PWA, Tailwind, chunking, workbox
+├── tsconfig.{app,node}.json            # Project references
+├── package.json                        # React 19, wagmi 2, viem 2, RainbowKit 2
+├── src/
+│   ├── main.tsx · App.tsx              # Entry + router/providers
+│   ├── env.ts                          # Typed VITE_* env loader
+│   ├── lib/
+│   │   ├── chains.ts                   # Chain registry + fee-router lookup
+│   │   ├── wagmi.ts                    # RainbowKit + wagmi config
+│   │   ├── supabase.ts                 # Auth + DB client
+│   │   ├── siwe.ts                     # SIWE message builder & exchange
+│   │   ├── feeRouter.ts                # ABI + quote helpers
+│   │   ├── prices.ts                   # CoinGecko price oracle
+│   │   └── utils.ts                    # cn, fmt, iOS detection, etc.
+│   ├── hooks/                          # useAuth, useTokenBalance, useTransactionHistory
+│   ├── components/                     # AuthShell, Button, Field, Modal, Toast,
+│   │                                   #   TopBar, BalanceCard, SendCard,
+│   │                                   #   HistoryCard, InstallPrompt
+│   └── routes/                         # Login, Signup, ForgotPassword,
+│                                       #   AuthCallback, Dashboard
+├── contracts/
+│   ├── FeeRouter.sol                   # The commission contract
+│   └── README.md                       # Deploy + ops guide
 ├── supabase/
-│   ├── schema.sql                      # tables + RLS policies
-│   └── functions/siwe-verify/index.ts  # Deno Edge Function
-└── docs/
-    ├── ARCHITECTURE.md
-    ├── SECURITY.md
-    ├── RLS.md
-    ├── SETUP.md
-    └── TESTNET.md
+│   ├── schema.sql                      # profiles, wallets, transactions,
+│   │                                   #   commissions + RLS policies
+│   └── functions/siwe-verify/index.ts  # Deno Edge Function (SIWE → session)
+├── public/
+│   ├── _headers · _redirects           # Cloudflare Pages (CSP, SPA fallback)
+│   ├── icon.svg                        # Source for generated PWA icons
+│   ├── pwa-{64,192,512}.png            # Generated by pwa-assets-generator
+│   ├── apple-touch-icon-180x180.png    # iOS home-screen icon
+│   └── maskable-icon-512x512.png       # Android adaptive icon
+├── .github/workflows/deploy.yml        # CI → Cloudflare Pages
+├── wrangler.toml                       # Cloudflare project config
+└── docs/                               # All long-form docs
 ```
 
----
+## Tech choices, justified
 
-## What changed from the previous WinterWallet?
-
-The previous version was a `localStorage`-based demo with fake ARS pesos and a
-fake BTC counter that grew with a CoinGecko percentage tick. **None of it
-touched a blockchain.** This rewrite replaces it with a real EVM wallet:
-
-- Real key management (BIP-39 + WebCrypto, or external EIP-1193 wallets).
-- Real transactions broadcast over JSON-RPC.
-- Real on-chain balances.
-- Real RLS in Postgres for the optional history backend.
-- A modern, accessible dark UI.
-
-If you want to see the legacy demo, it lives in git history before the
-`claude/web3-wallet-blockchain-*` branch.
-
----
+- **React 19 + Vite 6**: zero-config dev experience, sub-second HMR,
+  tiny prod bundles via per-locale code-splitting.
+- **wagmi v2 + viem v2**: the modern, type-safe replacement for ethers.
+  Viem is half the bundle size and noticeably faster for the operations
+  we care about.
+- **RainbowKit v2**: best wallet-connect UX out of the box. Supports
+  injected, WalletConnect, Coinbase, Safe, and dozens of mobile wallets.
+- **Tailwind v4**: CSS-first config, no `tailwind.config.js`, faster
+  build, native `@theme` directive for tokens.
+- **TanStack Query**: wagmi uses it internally; we use the same client
+  for Supabase reads so cache invalidation stays consistent.
+- **vite-plugin-pwa + Workbox**: precaches the shell, serves offline,
+  generates iOS-correct icons from one SVG source.
+- **Supabase Auth + Postgres**: email/password + magic link + RLS in 30
+  lines of SQL. Optional SIWE via the Edge Function.
+- **Cloudflare Pages**: free tier covers the realistic launch scale,
+  global CDN, instant rollbacks, Workers-style headers via `_headers`.
 
 ## License
 
-MIT. Use at your own risk. This software handles cryptocurrency; review the
-[security model](docs/SECURITY.md) before holding meaningful value in a
-self-custody wallet.
+MIT. Self-custody software handles real money — read
+[`docs/SECURITY.md`](docs/SECURITY.md) before holding meaningful value.

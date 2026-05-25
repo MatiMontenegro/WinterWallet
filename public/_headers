@@ -1,0 +1,27 @@
+# Cloudflare Pages headers — see https://developers.cloudflare.com/pages/configuration/headers/
+# Hardened for a self-custody wallet.
+
+/*
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: clipboard-read=(self), clipboard-write=(self), camera=(), microphone=(), geolocation=(), payment=()
+  Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.publicnode.com https://*.alchemyapi.io https://*.alchemy.com https://*.infura.io https://api.coingecko.com https://*.supabase.co wss://*.supabase.co https://*.walletconnect.com https://*.walletconnect.org wss://*.walletconnect.com wss://*.walletconnect.org https://*.reown.com https://*.cloudflareinsights.com; frame-src 'self' https://*.walletconnect.com https://*.walletconnect.org; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; manifest-src 'self'
+
+# Long-cache the immutable Vite-hashed assets.
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# Service worker must always be revalidated.
+/sw.js
+  Cache-Control: no-cache, no-store, must-revalidate
+/registerSW.js
+  Cache-Control: no-cache, no-store, must-revalidate
+/workbox-*.js
+  Cache-Control: no-cache, no-store, must-revalidate
+
+# Web manifest
+/manifest.webmanifest
+  Cache-Control: public, max-age=86400
+  Content-Type: application/manifest+json

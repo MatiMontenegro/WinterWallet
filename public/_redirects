@@ -1,0 +1,3 @@
+# SPA fallback — every unknown route serves /index.html so the React Router
+# can take over. Keep this LAST so static files still win.
+/*    /index.html   200

@@ -1,0 +1,94 @@
+@import "tailwindcss";
+@import "@rainbow-me/rainbowkit/styles.css";
+
+/* -------------------------------------------------------------------------
+ * Tailwind v4 design tokens — exposed as CSS variables and Tailwind
+ * utilities (e.g. `bg-bg-1`, `text-accent`).
+ * --------------------------------------------------------------------- */
+@theme {
+  --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+  --color-bg-0: #0b0d18;
+  --color-bg-1: #11142a;
+  --color-bg-2: #1a1d3a;
+  --color-bg-3: #232a4d;
+  --color-line: rgba(255, 255, 255, 0.08);
+  --color-line-strong: rgba(255, 255, 255, 0.18);
+
+  --color-text: #e7e9ff;
+  --color-text-dim: #a3a8c8;
+  --color-text-mute: #6e7396;
+
+  --color-accent: #7cf7c8;
+  --color-accent-strong: #00ffc6;
+  --color-warn: #ffd166;
+  --color-danger: #ff6b8a;
+  --color-info: #7aa9ff;
+
+  --radius: 14px;
+  --radius-sm: 8px;
+  --radius-pill: 999px;
+
+  --shadow-glass: 0 8px 32px rgba(0, 0, 0, 0.45);
+
+  --animate-pulse-slow: pulseSlow 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  --animate-float: float 6s ease-in-out infinite;
+  --animate-fade-up: fadeUp 0.5s ease-out;
+  --animate-shimmer: shimmer 2s linear infinite;
+}
+
+@keyframes pulseSlow { 0%,100%{ opacity:.6 } 50%{ opacity:1 } }
+@keyframes float     { 0%,100%{ transform:translateY(0) } 50%{ transform:translateY(-10px) } }
+@keyframes fadeUp    { from{ opacity:0; transform:translateY(8px) } to{ opacity:1; transform:none } }
+@keyframes shimmer   { 0%{ background-position:-200% 0 } 100%{ background-position:200% 0 } }
+
+/* -------------------------------------------------------------------------
+ * Base + iOS PWA niceties.
+ * --------------------------------------------------------------------- */
+html, body, #root { height: 100%; }
+body {
+  font-family: var(--font-sans);
+  background:
+    radial-gradient(1200px 800px at 80% -10%, rgba(124, 247, 200, 0.10), transparent 60%),
+    radial-gradient(900px 600px at -10% 30%, rgba(122, 169, 255, 0.10), transparent 55%),
+    var(--color-bg-0);
+  min-height: 100dvh;
+  /* iOS safe-area-aware padding so the bottom tab bar isn't under the home indicator. */
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* Disable iOS pinch-zoom on form inputs (we set viewport maximum-scale=1). */
+input, textarea, select {
+  font-size: 16px;
+}
+
+/* Reduce flicker on iOS Safari when scrolling cards over the gradient. */
+.card-glass {
+  background: linear-gradient(180deg, rgba(255,255,255,0.025), rgba(255,255,255,0)) , var(--color-bg-1);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-glass);
+}
+
+.shimmer {
+  background: linear-gradient(90deg, var(--color-bg-2) 0%, var(--color-bg-3) 50%, var(--color-bg-2) 100%);
+  background-size: 200% 100%;
+  animation: var(--animate-shimmer);
+}
+
+/* RainbowKit dark-tweaks to harmonise with our palette. */
+[data-rk] {
+  --rk-colors-accentColor: var(--color-accent);
+  --rk-colors-accentColorForeground: #0b0d18;
+  --rk-colors-modalBackground: var(--color-bg-1);
+  --rk-colors-modalBorder: var(--color-line);
+  --rk-fonts-body: var(--font-sans);
+  --rk-radii-modal: var(--radius);
+  --rk-radii-actionButton: var(--radius-sm);
+}
+
+/* For prefers-reduced-motion, we soften everything. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
